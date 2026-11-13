@@ -6,15 +6,18 @@
  *  - DRY_RUN staat standaard AAN: er wordt niets verzonden en niets in Notion gewijzigd.
  *  - Eerste pitch vertrekt alleen als: Status = Concept klaar / Klaar voor verzending,
  *    "Automatisch verzenden goedgekeurd" = aan, "Verzending toegestaan" = aan,
- *    Verzendwijze = Automatisch, Niet meer contacteren = uit, geldig e-mailadres,
- *    onderwerp + eerste bericht ingevuld, Mailthread en Eerste verzending leeg.
- *  - Vóór elke verzending: rij vergrendelen in Notion + Gmail doorzoeken op eerdere mail
- *    naar dat adres of domein. Gevonden = NIET verzenden.
+ *    Verzendwijze = Automatisch, Kanaal = E-mail, Niet meer contacteren = uit, geldig
+ *    e-mailadres, onderwerp + eerste bericht ingevuld, Mailthread en Eerste verzending leeg.
+ *  - Vóór elke verzending: Gmail doorzoeken op eerdere mail naar dat adres of domein
+ *    (gratis maildomeinen zoals gmail.com alleen op exact adres). Gevonden = NIET verzenden.
+ *    Daarna rij vergrendelen in Notion, pas dan verzenden.
  *  - Na verzending: meteen terugschrijven (3 pogingen); lukt dat niet, dan onthoudt het script
  *    dit duurzaam en probeert het de volgende run opnieuw. Rij blijft vergrendeld.
  *  - Onbekende fout = rij blijft vergrendeld met FOUT-melding en komt in je dagrapport.
  *  - Follow-ups: max 2, pas 4 kalenderdagen na de ECHTE Gmail-verzenddatum, alleen in
- *    de bestaande thread, nooit bij antwoord, afwijzing, bounce of "Niet meer contacteren".
+ *    de bestaande thread en alleen naar de oorspronkelijke ontvanger, nooit bij antwoord,
+ *    afwijzing, bounce of "Niet meer contacteren".
+ *  - Gmail-quotum wordt vóór elke mail gecontroleerd.
  */
 
 // ====== INSTELLINGEN ======
@@ -23,16 +26,30 @@ var CFG = {
   DATA_SOURCE_ID: '32a5fb7f-bced-4e2c-b926-7f1ec94afd17',
   NOTION_VERSION: '2025-09-03',
   SENDER_NAME: 'Tatiana | The Tatiana Edit',
-  REPORT_TO: Session.getActiveUser().getEmail(),
-  DAILY_CAP_FIRST: 50,           // nieuwe pitches per werkdag
+  REPORT_TO: 'tatianankoyugc@gmail.com',
+  DAILY_CAP_FIRST: 50,           // nieuwe pitches per werkdag (harde bovengrens)
   BATCH_SIZE: 8,                 // per run (houdt de run onder de 6 minuten)
   PAUSE_MS: 25000,               // pauze tussen mails
   FOLLOWUP_DAYS: 4,
   MAX_FOLLOWUPS: 2,
-  WINDOW_START: 9, WINDOW_END: 17, // Brussels-uren
+  WINDOW_START: 9, WINDOW_END: 17, // Brussels-uren, ma-vr
   TZ: 'Europe/Brussels',
-  RUN_BUDGET_MS: 4.5 * 60 * 1000
+  RUN_BUDGET_MS: 4.5 * 60 * 1000,
+  MIN_MAIL_QUOTA: 10,            // stop met verzenden als er minder mails over zijn vandaag
+  // Eenvoudige werkwijze: alleen "Automatisch verzenden goedgekeurd" is dan nodig.
+  // Staat UIT tot Tatiana akkoord geeft.
+  SIMPLE_APPROVAL: false
 };
+
+var FREE_MAIL_DOMAINS = ['gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.be', 'hotmail.nl',
+  'outlook.com', 'outlook.be', 'live.com', 'live.be', 'live.nl', 'yahoo.com', 'icloud.com', 'me.com',
+  'telenet.be', 'skynet.be', 'proximus.be', 'ziggo.nl', 'kpnmail.nl', 'msn.com'];
+
+var INTERESTING_REPLIES = ['Geïnteresseerd', 'Meer informatie gevraagd', 'Offerte gevraagd'];
+
+var FORCE_DRY_ = false; // wordt door de testfuncties op true gezet
+var LOG_BUF_ = [];
+function isDry_() { return CFG.DRY_RUN || FORCE_DRY_; }
 
 // ====== TRIGGERS ======
 function installTriggers() {
@@ -66,15 +83,20 @@ function inWindow_() {
   return day <= 5 && hr >= CFG.WINDOW_START && hr < CFG.WINDOW_END;
 }
 
+function mailQuotaOk_() {
+  var left = MailApp.getRemainingDailyQuota();
+  if (left < CFG.MIN_MAIL_QUOTA) {
+    alert_('Gmail-quotum bijna op (' + left + ' over vandaag). Verzenden gepauzeerd tot morgen.');
+    return false;
+  }
+  return true;
+}
+
 // ====== EERSTE PITCHES ======
-function processFirstPitches_(t0) {
-  var sentToday = getCounter_('first');
-  var room = CFG.DAILY_CAP_FIRST - sentToday;
-  if (room <= 0) { return; }
-  var filter = { and: [
+function firstPitchFilter_() {
+  var f = [
     { or: [ sel_('Status', 'Concept klaar'), sel_('Status', 'Klaar voor verzending') ] },
     chk_('Automatisch verzenden goedgekeurd', true),
-    chk_('Verzending toegestaan', true),
     chk_('Niet meer contacteren', false),
     sel_('Verzendwijze', 'Automatisch'),
     sel_('Kanaal', 'E-mail'),
@@ -82,19 +104,39 @@ function processFirstPitches_(t0) {
     { property: 'Eerste verzending', date: { is_empty: true } },
     { property: 'Verzendcontrole', rich_text: { does_not_contain: 'VERGRENDELD' } },
     { property: 'Verzendcontrole', rich_text: { does_not_contain: 'FOUT' } },
-    { property: 'Verzendcontrole', rich_text: { does_not_contain: 'GEBLOKKEERD' } }
-  ]};
-  var rows = queryAll_(filter, Math.min(room, CFG.BATCH_SIZE));
-  rows.forEach(function (page) {
-    if (Date.now() - t0 > CFG.RUN_BUDGET_MS) { return; }
-    sendFirst_(page);
-  });
+    { property: 'Verzendcontrole', rich_text: { does_not_contain: 'GEBLOKKEERD' } },
+    { property: 'Verzendcontrole', rich_text: { does_not_contain: 'BEZIG' } }
+  ];
+  if (!CFG.SIMPLE_APPROVAL) f.push(chk_('Verzending toegestaan', true));
+  return { and: f };
+}
+
+function processFirstPitches_(t0) {
+  var sentToday = getCounter_('first');
+  var room = CFG.DAILY_CAP_FIRST - sentToday;
+  if (room <= 0) { log_('Daglimiet eerste pitches bereikt (' + sentToday + ').'); return; }
+  var rows = queryAll_(firstPitchFilter_(), Math.min(room, CFG.BATCH_SIZE));
+  log_('Eerste pitches in de wachtrij deze run: ' + rows.length);
+  for (var i = 0; i < rows.length; i++) {
+    if (Date.now() - t0 > CFG.RUN_BUDGET_MS) { log_('Runbudget op, rest volgende run.'); return; }
+    if (!isDry_() && !mailQuotaOk_()) return;
+    sendFirst_(rows[i]);
+  }
+}
+
+function priorContact_(to) {
+  var domain = to.split('@')[1].toLowerCase();
+  var q = FREE_MAIL_DOMAINS.indexOf(domain) >= 0
+    ? 'in:sent to:' + to
+    : 'in:sent (to:' + to + ' OR to:@' + domain + ')';
+  var prior = GmailApp.search(q, 0, 1);
+  return prior.length ? { domain: domain, thread: prior[0].getId() } : null;
 }
 
 function sendFirst_(page) {
   var id = page.id;
   var brand = txt_(page, 'Merk');
-  var to = (page.properties['E-mail'].email || '').trim();
+  var to = ((page.properties['E-mail'] && page.properties['E-mail'].email) || '').trim();
   var subject = txt_(page, 'Onderwerp');
   var body = txt_(page, 'Eerste bericht');
 
@@ -102,14 +144,13 @@ function sendFirst_(page) {
   if (problem) { block_(id, brand, problem); return; }
 
   // 1. Duplicaatcontrole in Gmail (adres + domein)
-  var domain = to.split('@')[1];
-  var prior = GmailApp.search('in:sent (to:' + to + ' OR to:@' + domain + ')', 0, 1);
-  if (prior.length) {
-    block_(id, brand, 'Gmail toont al eerder contact met ' + to + ' of @' + domain + ' (thread ' + prior[0].getId() + '). Handmatig controleren.');
+  var prior = priorContact_(to);
+  if (prior) {
+    block_(id, brand, 'Gmail toont al eerder contact met ' + to + ' of @' + prior.domain + ' (thread ' + prior.thread + '). Handmatig controleren.');
     return;
   }
 
-  if (CFG.DRY_RUN) {
+  if (isDry_()) {
     log_('[DRY RUN] zou verzenden: ' + brand + ' -> ' + to + ' | ' + subject);
     return;
   }
@@ -130,6 +171,7 @@ function sendFirst_(page) {
     alert_('Verzendfout bij ' + brand + ': ' + e);
     return;
   }
+  bumpCounter_('first');
   var thread = msg.getThread();
   var sentAt = msg.getDate();
   var props = {
@@ -142,19 +184,20 @@ function sendFirst_(page) {
     'Volgende actie': { date: { start: addDays_(sentAt, CFG.FOLLOWUP_DAYS) } },
     'Verzendcontrole': rt_('VERZONDEN — Gmail thread ' + thread.getId() + '; Gmail-tijd ' + iso_(sentAt) + '. Verzonden is geen bewijs van aflevering of lezen.')
   };
-  bumpCounter_('first');
   if (!updateWithRetry_(id, props)) { queueWriteback_(id, props); }
+  log_('VERZONDEN ' + brand + ' -> ' + to + ' (thread ' + thread.getId() + ')');
   Utilities.sleep(CFG.PAUSE_MS);
 }
 
 function validate_(page, to, subject, body) {
   if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(to)) return 'Ongeldig of leeg e-mailadres';
   if (/^(no-?reply|noreply|donotreply)@/i.test(to)) return 'No-reply adres';
+  if (to.toLowerCase() === CFG.REPORT_TO.toLowerCase()) return 'Ontvanger is je eigen adres';
   if (!subject || subject.length < 5) return 'Onderwerp ontbreekt';
   if (!body || body.length < 200) return 'Bericht ontbreekt of te kort';
   if (body.length > 2500) return 'Bericht te lang voor een eerste pitch';
   if (!txt_(page, 'Land of markt')) return 'Land of markt ontbreekt (taal te bevestigen)';
-  var taal = page.properties['Taal'] && page.properties['Taal'].select ? page.properties['Taal'].select.name : '';
+  var taal = selName_(page, 'Taal');
   if (!taal || taal === 'Taal te bevestigen') return 'Taal te bevestigen (veld Taal leeg)';
   if (/\[[^\]]*\]|\{\{|TODO|XXX/.test(body + subject)) return 'Placeholder in tekst';
   return null;
@@ -162,7 +205,7 @@ function validate_(page, to, subject, body) {
 
 function block_(id, brand, reason) {
   log_('GEBLOKKEERD ' + brand + ': ' + reason);
-  if (CFG.DRY_RUN) return;
+  if (isDry_()) return;
   updatePage_(id, { 'Verzendcontrole': rt_('GEBLOKKEERD ' + iso_(new Date()) + ': ' + reason) });
 }
 
@@ -174,26 +217,40 @@ function processFollowups_(t0) {
     sel_('Follow-upstatus', 'Wacht op antwoord'),
     sel_('Verzendwijze', 'Automatisch'),
     chk_('Niet meer contacteren', false),
+    { property: 'Reactiecategorie', select: { is_empty: true } },
     { property: 'Mailthread', url: { is_not_empty: true } },
     { property: 'Volgende actie', date: { on_or_before: today } },
-    { property: 'Aantal follow-ups', number: { less_than: CFG.MAX_FOLLOWUPS } }
+    { or: [
+      { property: 'Aantal follow-ups', number: { less_than: CFG.MAX_FOLLOWUPS } },
+      { property: 'Aantal follow-ups', number: { is_empty: true } }
+    ] },
+    { property: 'Verzendcontrole', rich_text: { does_not_contain: 'VERGRENDELD' } },
+    { property: 'Verzendcontrole', rich_text: { does_not_contain: 'GEBLOKKEERD' } }
   ]};
-  queryAll_(filter, CFG.BATCH_SIZE).forEach(function (page) {
+  var rows = queryAll_(filter, CFG.BATCH_SIZE);
+  log_('Follow-ups die vandaag aan de beurt zijn (deze run): ' + rows.length);
+  for (var i = 0; i < rows.length; i++) {
     if (Date.now() - t0 > CFG.RUN_BUDGET_MS) { return; }
-    sendFollowup_(page);
-  });
+    if (!isDry_() && !mailQuotaOk_()) return;
+    sendFollowup_(rows[i]);
+  }
+}
+
+function threadIdFromUrl_(url) {
+  var m = String(url || '').match(/([0-9a-f]{12,})\s*$/i);
+  return m ? m[1] : null;
 }
 
 function sendFollowup_(page) {
   var id = page.id, brand = txt_(page, 'Merk');
-  var n = page.properties['Aantal follow-ups'].number || 0;
+  var n = (page.properties['Aantal follow-ups'] && page.properties['Aantal follow-ups'].number) || 0;
   var text = txt_(page, n === 0 ? 'Follow-up 1' : 'Follow-up 2');
-  var m = (page.properties['Mailthread'].url || '').match(/([0-9a-f]{12,})$/i);
-  if (!m || !text) { log_('Follow-up overgeslagen ' + brand + ': thread of tekst ontbreekt'); return; }
-  var thread = GmailApp.getThreadById(m[1]);
+  var threadId = threadIdFromUrl_(page.properties['Mailthread'].url);
+  if (!threadId || !text) { log_('Follow-up overgeslagen ' + brand + ': thread of tekst ontbreekt'); return; }
+  var thread = GmailApp.getThreadById(threadId);
   if (!thread) { block_(id, brand, 'Gmail-thread niet gevonden'); return; }
 
-  var me = Session.getActiveUser().getEmail().toLowerCase();
+  var me = CFG.REPORT_TO.toLowerCase();
   var msgs = thread.getMessages();
   var lastMine = null;
   for (var i = 0; i < msgs.length; i++) {
@@ -201,16 +258,16 @@ function sendFollowup_(page) {
     if (from.indexOf(me) === -1) {
       // antwoord (of bounce) van iemand anders: stoppen
       var bounce = /mailer-daemon|postmaster/.test(from);
-      if (!CFG.DRY_RUN) {
+      if (!isDry_()) {
         updatePage_(id, {
           'Follow-upstatus': { select: { name: 'Gestopt' } },
           'Status': bounce ? { select: { name: 'Verzonden' } } : { select: { name: 'Reactie ontvangen' } },
           'Reactiecategorie': bounce ? { select: { name: 'Afleverprobleem' } } : undefined,
           'Laatste reactie': rt_(iso_(msgs[i].getDate()) + ' — ' + msgs[i].getFrom().slice(0, 80)),
-          'Volgende stap': rt_('Antwoord lezen en zelf opvolgen')
+          'Volgende stap': rt_(bounce ? 'Adres geeft bounce — nieuwe contactroute zoeken' : 'Antwoord lezen en zelf opvolgen')
         });
       }
-      log_('Follow-up gestopt (antwoord/bounce) ' + brand);
+      log_('Follow-up gestopt (' + (bounce ? 'bounce' : 'antwoord') + ') ' + brand);
       return;
     } else { lastMine = msgs[i]; }
   }
@@ -218,17 +275,26 @@ function sendFollowup_(page) {
   var days = (Date.now() - lastMine.getDate().getTime()) / 86400000;
   if (days < CFG.FOLLOWUP_DAYS) { return; } // echte verzenddatum, niet de geplande
 
-  if (CFG.DRY_RUN) { log_('[DRY RUN] zou follow-up ' + (n + 1) + ' sturen: ' + brand); return; }
+  // Ontvanger = de oorspronkelijke ontvanger van de eerste mail, en die moet overeenkomen met Notion.
+  var to = msgs[0].getTo();
+  var notionTo = ((page.properties['E-mail'] && page.properties['E-mail'].email) || '').trim().toLowerCase();
+  if (!to || to.toLowerCase().indexOf(me) >= 0 || (notionTo && to.toLowerCase().indexOf(notionTo) === -1)) {
+    block_(id, brand, 'Follow-up niet verstuurd: ontvanger in Gmail-thread (' + to + ') komt niet overeen met E-mail in Notion. Handmatig controleren.');
+    return;
+  }
+
+  if (isDry_()) { log_('[DRY RUN] zou follow-up ' + (n + 1) + ' sturen: ' + brand + ' -> ' + to); return; }
 
   var runId = Utilities.getUuid().slice(0, 8);
   if (!updatePage_(id, { 'Verzendcontrole': rt_('VERGRENDELD FU' + (n + 1) + ' ' + runId + ' ' + iso_(new Date())) })) { return; }
   try {
-    thread.reply(text, { name: CFG.SENDER_NAME });
+    replyInThread_(threadId, msgs[0], lastMine, to, text);
   } catch (e) {
-    updatePage_(id, { 'Verzendcontrole': rt_('FOUT follow-up ' + (n + 1) + ': ' + String(e).slice(0, 300)) });
+    updatePage_(id, { 'Verzendcontrole': rt_('FOUT follow-up ' + (n + 1) + ' ' + iso_(new Date()) + ': ' + String(e).slice(0, 300) + ' — controleer Gmail vóór je dit wist.') });
     alert_('Follow-upfout bij ' + brand + ': ' + e);
     return;
   }
+  bumpCounter_('followup');
   var now = new Date();
   var done = n + 1;
   var props = {
@@ -237,27 +303,65 @@ function sendFollowup_(page) {
     'Laatste contact': { date: { start: iso_(now) } },
     'Follow-upstatus': { select: { name: done >= CFG.MAX_FOLLOWUPS ? 'Gestopt' : 'Wacht op antwoord' } },
     'Volgende actie': done >= CFG.MAX_FOLLOWUPS ? { date: null } : { date: { start: addDays_(now, CFG.FOLLOWUP_DAYS) } },
-    'Verzendcontrole': rt_('FOLLOW-UP ' + done + ' VERZONDEN ' + iso_(now) + ' in thread ' + m[1])
+    'Verzendcontrole': rt_('FOLLOW-UP ' + done + ' VERZONDEN ' + iso_(now) + ' in thread ' + threadId)
   };
-  bumpCounter_('followup');
   if (!updateWithRetry_(id, props)) { queueWriteback_(id, props); }
+  log_('FOLLOW-UP ' + done + ' VERZONDEN ' + brand + ' -> ' + to);
   Utilities.sleep(CFG.PAUSE_MS);
+}
+
+/**
+ * Antwoord in de bestaande thread, expliciet naar de oorspronkelijke ontvanger.
+ * (GmailThread.reply() stuurt bij een thread waarvan jij de laatste afzender bent
+ *  het antwoord naar jezelf. Daarom via de Gmail API met In-Reply-To/References.)
+ */
+function replyInThread_(threadId, firstMsg, lastMine, to, text) {
+  var subj = firstMsg.getSubject();
+  if (!/^re:/i.test(subj)) subj = 'Re: ' + subj;
+  var msgId = lastMine.getHeader('Message-ID');
+  if (!msgId) throw new Error('Message-ID van vorige mail ontbreekt');
+  var refs = lastMine.getHeader('References');
+  refs = (refs ? refs + ' ' : '') + msgId;
+  var lines = [
+    'From: ' + encodeWord_(CFG.SENDER_NAME) + ' <' + CFG.REPORT_TO + '>',
+    'To: ' + to,
+    'Subject: ' + encodeWord_(subj),
+    'In-Reply-To: ' + msgId,
+    'References: ' + refs,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    Utilities.base64Encode(text, Utilities.Charset.UTF_8).replace(/(.{76})/g, '$1\r\n')
+  ];
+  var raw = Utilities.base64EncodeWebSafe(lines.join('\r\n'));
+  return Gmail.Users.Messages.send({ raw: raw, threadId: threadId }, 'me');
+}
+function encodeWord_(s) {
+  return /^[\x20-\x7e]*$/.test(s) ? s : '=?UTF-8?B?' + Utilities.base64Encode(s, Utilities.Charset.UTF_8) + '?=';
 }
 
 // ====== BOUNCES ======
 function processBounces_() {
+  var cache = CacheService.getScriptCache();
+  var me = CFG.REPORT_TO.toLowerCase();
   var threads = GmailApp.search('from:(mailer-daemon OR postmaster) newer_than:3d', 0, 20);
   threads.forEach(function (th) {
     th.getMessages().forEach(function (msg) {
+      var key = 'bounce_' + msg.getId();
+      if (cache.get(key)) return; // al verwerkt
       var body = msg.getPlainBody() || '';
       var found = body.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [];
+      var seen = {};
       found.forEach(function (addr) {
-        if (addr.toLowerCase() === Session.getActiveUser().getEmail().toLowerCase() || /mailer-daemon|postmaster/i.test(addr)) return;
+        addr = addr.toLowerCase();
+        if (seen[addr] || addr === me || /mailer-daemon|postmaster/i.test(addr)) return;
+        seen[addr] = true;
         var rows = queryAll_({ and: [
           { property: 'E-mail', email: { equals: addr } },
           { property: 'Reactiecategorie', select: { is_empty: true } }
         ]}, 1);
-        if (rows.length && !CFG.DRY_RUN) {
+        if (rows.length && !isDry_()) {
           updatePage_(rows[0].id, {
             'Reactiecategorie': { select: { name: 'Afleverprobleem' } },
             'Follow-upstatus': { select: { name: 'Gestopt' } },
@@ -266,39 +370,87 @@ function processBounces_() {
         }
         if (rows.length) log_('Bounce verwerkt: ' + addr);
       });
+      if (!isDry_()) cache.put(key, '1', 21600);
     });
   });
 }
 
 // ====== DAGRAPPORT ======
 function dailyReport() {
-  var statuses = ['Te onderzoeken', 'Concept klaar', 'Klaar voor verzending', 'Verzonden', 'Follow-up 1 verzonden', 'Follow-up 2 verzonden', 'Reactie ontvangen', 'In gesprek', 'Deal', 'Afgesloten'];
-  var lines = ['Outreach Buddy — dagrapport ' + Utilities.formatDate(new Date(), CFG.TZ, 'dd/MM/yyyy'), CFG.DRY_RUN ? '(DRY RUN: er is niets verzonden)' : ''];
-  statuses.forEach(function (s) {
-    var n = queryAll_(sel_('Status', s), 500).length;
-    lines.push(s + ': ' + n);
-  });
+  var lines = ['Outreach Buddy — dagrapport ' + Utilities.formatDate(new Date(), CFG.TZ, 'dd/MM/yyyy')];
+  if (isDry_()) lines.push('(DRY RUN: er is niets verzonden)');
+
+  // 1. Interessante reacties bovenaan
+  var hot = queryAll_({ and: [
+    { or: INTERESTING_REPLIES.map(function (r) { return sel_('Reactiecategorie', r); }) },
+    { property: 'Status', select: { does_not_equal: 'Afgesloten' } },
+    { property: 'Status', select: { does_not_equal: 'Deal' } }
+  ]}, 50);
+  lines.push('');
+  lines.push('🔥 Zelf oppakken (interessante reacties): ' + hot.length);
+  hot.forEach(function (p) { lines.push(' - ' + txt_(p, 'Merk') + ' — ' + selName_(p, 'Reactiecategorie') + ' — ' + (p.url || '')); });
+
+  // 2. Vandaag verzonden
   lines.push('');
   lines.push('Vandaag verzonden door het script — eerste pitches: ' + getCounter_('first') + ', follow-ups: ' + getCounter_('followup'));
-  var errs = queryAll_({ or: [
-    { property: 'Verzendcontrole', rich_text: { contains: 'FOUT' } },
-    { property: 'Verzendcontrole', rich_text: { contains: 'VERGRENDELD' } },
-    { property: 'Verzendcontrole', rich_text: { contains: 'GEBLOKKEERD' } }
+  lines.push('Gmail-quotum nog over vandaag: ' + MailApp.getRemainingDailyQuota());
+
+  // 3. Aangevinkt maar (nog) niet verstuurd, met reden
+  var approved = queryAll_({ and: [
+    { or: [ sel_('Status', 'Concept klaar'), sel_('Status', 'Klaar voor verzending') ] },
+    chk_('Automatisch verzenden goedgekeurd', true)
   ]}, 100);
+  if (approved.length) {
+    lines.push('');
+    lines.push('Aangevinkt, wacht op verzending: ' + approved.length);
+    approved.slice(0, 25).forEach(function (p) { lines.push(' - ' + txt_(p, 'Merk') + ': ' + (whyNotSent_(p) || 'klaar, gaat mee in de volgende run binnen het venster')); });
+  }
+
+  // 4. Aandacht nodig: alleen rijen waarvan Verzendcontrole met een probleemwoord begint
+  var errs = queryAll_({ or: ['FOUT', 'VERGRENDELD', 'GEBLOKKEERD', 'BEZIG', 'BEZORGFOUT'].map(function (w) {
+    return { property: 'Verzendcontrole', rich_text: { starts_with: w } };
+  }) }, 100);
+  lines.push('');
   lines.push('Aandacht nodig (fout/vergrendeld/geblokkeerd): ' + errs.length);
   errs.slice(0, 25).forEach(function (p) { lines.push(' - ' + txt_(p, 'Merk') + ': ' + txt_(p, 'Verzendcontrole').slice(0, 140)); });
+
+  // 5. Statusoverzicht
+  lines.push('');
+  ['Te onderzoeken', 'Concept klaar', 'Klaar voor verzending', 'Verzonden', 'Follow-up 1 verzonden', 'Follow-up 2 verzonden', 'Reactie ontvangen', 'In gesprek', 'Deal', 'Afgesloten'].forEach(function (s) {
+    lines.push(s + ': ' + queryAll_(sel_('Status', s), 1000).length);
+  });
   GmailApp.sendEmail(CFG.REPORT_TO, 'Outreach Buddy dagrapport', lines.join('\n'));
+}
+
+// Leesbare reden waarom een aangevinkte rij niet vertrekt (geen wijzigingen).
+function whyNotSent_(p) {
+  if (!CFG.SIMPLE_APPROVAL && !chkVal_(p, 'Verzending toegestaan')) return 'vinkje "Verzending toegestaan" staat uit';
+  if (chkVal_(p, 'Niet meer contacteren')) return '"Niet meer contacteren" staat aan';
+  if (selName_(p, 'Verzendwijze') !== 'Automatisch') return 'Verzendwijze is niet Automatisch';
+  if (selName_(p, 'Kanaal') !== 'E-mail') return 'Kanaal is niet E-mail';
+  var vc = txt_(p, 'Verzendcontrole');
+  if (/VERGRENDELD|FOUT|GEBLOKKEERD|BEZIG/i.test(vc)) return 'Verzendcontrole: ' + vc.slice(0, 80);
+  if (p.properties['Mailthread'] && p.properties['Mailthread'].url) return 'Mailthread is al ingevuld';
+  var to = ((p.properties['E-mail'] && p.properties['E-mail'].email) || '').trim();
+  return validate_(p, to, txt_(p, 'Onderwerp'), txt_(p, 'Eerste bericht'));
 }
 
 function alert_(msg) {
   log_('ALERT ' + msg);
-  try { GmailApp.sendEmail(CFG.REPORT_TO, 'Outreach Buddy — aandacht nodig', msg); } catch (e) {}
+  try {
+    var cache = CacheService.getScriptCache();
+    var key = 'alert_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, String(msg).slice(0, 200)));
+    if (cache.get(key)) return; // dezelfde melding max 1x per uur
+    cache.put(key, '1', 3600);
+    GmailApp.sendEmail(CFG.REPORT_TO, 'Outreach Buddy — aandacht nodig', msg);
+  } catch (e) {}
 }
 
 // ====== NOTION ======
 function nfetch_(method, path, payload) {
   var token = PropertiesService.getScriptProperties().getProperty('NOTION_TOKEN');
-  for (var attempt = 0; attempt < 4; attempt++) {
+  if (!token) throw new Error('NOTION_TOKEN ontbreekt in Script Properties');
+  for (var attempt = 0; attempt < 5; attempt++) {
     var res = UrlFetchApp.fetch('https://api.notion.com' + path, {
       method: method, muteHttpExceptions: true, contentType: 'application/json',
       headers: { Authorization: 'Bearer ' + token, 'Notion-Version': CFG.NOTION_VERSION },
@@ -306,10 +458,14 @@ function nfetch_(method, path, payload) {
     });
     var code = res.getResponseCode();
     if (code === 200) return JSON.parse(res.getContentText());
-    if (code === 429 || code >= 500) { Utilities.sleep(1500 * (attempt + 1)); continue; }
+    if (code === 429 || code >= 500) {
+      var ra = Number((res.getHeaders() || {})['Retry-After'] || 0);
+      Utilities.sleep(ra ? Math.min(ra, 30) * 1000 : 1500 * (attempt + 1));
+      continue;
+    }
     throw new Error('Notion ' + code + ': ' + res.getContentText().slice(0, 300));
   }
-  throw new Error('Notion bleef falen na 4 pogingen');
+  throw new Error('Notion bleef falen na 5 pogingen');
 }
 
 function queryAll_(filter, limit) {
@@ -349,7 +505,9 @@ function queueWriteback_(id, props) {
 function flushPendingWritebacks_() {
   var sp = PropertiesService.getScriptProperties();
   var q = JSON.parse(sp.getProperty('PENDING') || '{}');
-  Object.keys(q).forEach(function (id) { if (updatePage_(id, q[id])) delete q[id]; });
+  var ids = Object.keys(q);
+  if (!ids.length) return;
+  ids.forEach(function (id) { if (updatePage_(id, q[id])) delete q[id]; });
   sp.setProperty('PENDING', JSON.stringify(q));
 }
 
@@ -363,15 +521,67 @@ function txt_(page, name) {
   var arr = p.title || p.rich_text || [];
   return arr.map(function (x) { return x.plain_text; }).join('').trim();
 }
+function selName_(page, name) {
+  var p = page.properties[name];
+  return p && p.select ? p.select.name : '';
+}
+function chkVal_(page, name) { var p = page.properties[name]; return !!(p && p.checkbox); }
 function iso_(d) { return Utilities.formatDate(d, 'UTC', "yyyy-MM-dd'T'HH:mm:ss'Z'"); }
 function addDays_(d, n) { return Utilities.formatDate(new Date(d.getTime() + n * 86400000), CFG.TZ, 'yyyy-MM-dd'); }
-function log_(s) { console.log(s); }
+function log_(s) { console.log(s); LOG_BUF_.push(s); }
 function dayKey_() { return Utilities.formatDate(new Date(), CFG.TZ, 'yyyyMMdd'); }
 function getCounter_(k) { return Number(PropertiesService.getScriptProperties().getProperty(k + '_' + dayKey_()) || 0); }
 function bumpCounter_(k) { PropertiesService.getScriptProperties().setProperty(k + '_' + dayKey_(), String(getCounter_(k) + 1)); }
 
-// ====== HANDIGE TESTFUNCTIES ======
+// ====== TESTFUNCTIES (versturen NOOIT iets naar merken) ======
 function testNotionConnection() {
   var r = queryAll_(sel_('Status', 'Verzonden'), 3);
   console.log('Notion OK, voorbeeldrijen: ' + r.map(function (p) { return txt_(p, 'Merk'); }).join(', '));
+}
+
+/**
+ * Eén klik = volledige controle. Verstuurt NIETS naar merken en wijzigt niets in Notion,
+ * ook niet als DRY_RUN op false staat. Mailt het resultaat naar REPORT_TO.
+ */
+function healthCheck() {
+  FORCE_DRY_ = true;
+  LOG_BUF_ = [];
+  var out = ['Outreach Buddy — healthcheck ' + Utilities.formatDate(new Date(), CFG.TZ, 'dd/MM/yyyy HH:mm') + ' (Brussel)'];
+  function step(name, fn) {
+    try { var r = fn(); out.push('OK   ' + name + (r ? ': ' + r : '')); }
+    catch (e) { out.push('FOUT ' + name + ': ' + e); }
+  }
+  step('Instellingen', function () {
+    return 'DRY_RUN=' + CFG.DRY_RUN + ', SIMPLE_APPROVAL=' + CFG.SIMPLE_APPROVAL + ', tijdzone script=' + Session.getScriptTimeZone() +
+      ', venster ' + CFG.WINDOW_START + '-' + CFG.WINDOW_END + 'u ma-vr (nu ' + (inWindow_() ? 'BINNEN' : 'BUITEN') + ' venster), daglimiet ' + CFG.DAILY_CAP_FIRST;
+  });
+  step('Account', function () { return 'script draait als ' + Session.getEffectiveUser().getEmail() + ', rapport naar ' + CFG.REPORT_TO + ', afzendernaam "' + CFG.SENDER_NAME + '"'; });
+  step('Notion-token', function () { if (!PropertiesService.getScriptProperties().getProperty('NOTION_TOKEN')) throw new Error('ontbreekt'); return 'aanwezig (waarde niet getoond)'; });
+  step('Notion-database + velden', function () {
+    var ds = nfetch_('get', '/v1/data_sources/' + CFG.DATA_SOURCE_ID);
+    var need = ['Merk', 'Status', 'E-mail', 'Onderwerp', 'Eerste bericht', 'Follow-up 1', 'Follow-up 2', 'Kanaal', 'Verzendwijze',
+      'Automatisch verzenden goedgekeurd', 'Verzending toegestaan', 'Niet meer contacteren', 'Verzendcontrole', 'Mailthread',
+      'Eerste verzending', 'Laatste contact', 'Volgende actie', 'Aantal follow-ups', 'Follow-upstatus', 'Reactiecategorie',
+      'Laatste reactie', 'Volgende stap', 'Land of markt', 'Taal'];
+    var missing = need.filter(function (k) { return !ds.properties[k]; });
+    if (missing.length) throw new Error('ontbrekende velden: ' + missing.join(', '));
+    return 'versie ' + CFG.NOTION_VERSION + ', alle ' + need.length + ' velden gevonden';
+  });
+  step('Triggers', function () {
+    var t = ScriptApp.getProjectTriggers().map(function (x) { return x.getHandlerFunction() + ' (' + x.getEventType() + ')'; });
+    var ok = t.join(' ').indexOf('runQueue') >= 0 && t.join(' ').indexOf('dailyReport') >= 0;
+    return (t.length ? t.join(', ') : 'GEEN') + (ok ? '' : '  <-- runQueue en/of dailyReport ontbreekt: voer installTriggers uit');
+  });
+  step('Gmail-quotum', function () { return MailApp.getRemainingDailyQuota() + ' mails over vandaag'; });
+  step('Gmail API (follow-ups)', function () { Gmail.Users.getProfile('me'); return 'bereikbaar'; });
+  step('Wachtende terugschrijvingen', function () { return Object.keys(JSON.parse(PropertiesService.getScriptProperties().getProperty('PENDING') || '{}')).length + ''; });
+  step('Dry-run eerste pitches', function () { processFirstPitches_(Date.now()); return ''; });
+  step('Dry-run follow-ups', function () { processFollowups_(Date.now()); return ''; });
+  out.push('');
+  out.push('--- Logboek ---');
+  out = out.concat(LOG_BUF_);
+  FORCE_DRY_ = false;
+  var text = out.join('\n');
+  console.log(text);
+  GmailApp.sendEmail(CFG.REPORT_TO, 'Outreach Buddy healthcheck', text);
 }
