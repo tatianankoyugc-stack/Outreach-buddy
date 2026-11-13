@@ -22,7 +22,7 @@
 
 // ====== INSTELLINGEN ======
 var CFG = {
-  DRY_RUN: true,                 // zet op false pas na de dry-run-controle
+  DRY_RUN: false,                // zet op false pas na de dry-run-controle
   DATA_SOURCE_ID: '32a5fb7f-bced-4e2c-b926-7f1ec94afd17',
   NOTION_VERSION: '2025-09-03',
   SENDER_NAME: 'Tatiana | The Tatiana Edit',
