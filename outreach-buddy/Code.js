@@ -247,8 +247,13 @@ function sendFollowup_(page) {
   var text = txt_(page, n === 0 ? 'Follow-up 1' : 'Follow-up 2');
   var threadId = threadIdFromUrl_(page.properties['Mailthread'].url);
   if (!threadId || !text) { log_('Follow-up overgeslagen ' + brand + ': thread of tekst ontbreekt'); return; }
-  var thread = GmailApp.getThreadById(threadId);
+  var thread = null;
+  try { thread = GmailApp.getThreadById(threadId); } catch (e) {}
+  if (!thread) { // oudere rijen bewaren soms een bericht-ID in plaats van een thread-ID
+    try { var mm = GmailApp.getMessageById(threadId); if (mm) thread = mm.getThread(); } catch (e) {}
+  }
   if (!thread) { block_(id, brand, 'Gmail-thread niet gevonden'); return; }
+  threadId = thread.getId();
 
   var me = CFG.REPORT_TO.toLowerCase();
   var msgs = thread.getMessages();
