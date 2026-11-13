@@ -1,0 +1,9 @@
+# Nooit committen: login-gegevens en geheimen
+.clasprc.json
+**/.clasprc.json
+creds.json
+client_secret*.json
+.env
+*.env
+node_modules/
+.DS_Store
