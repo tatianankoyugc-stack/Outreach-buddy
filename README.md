@@ -12,7 +12,7 @@ Google Apps Script (`outreach-buddy/Code.js`) dat UGC-pitches en follow-ups via 
 
 ### Eerste pitch vertrekt als
 - Status is `Concept klaar` of `Klaar voor verzending`
-- de vinkjes **Automatisch verzenden goedgekeurd** en **Verzending toegestaan** staan allebei aan (met `SIMPLE_APPROVAL: true` is alleen het eerste nodig)
+- de vinkjes **Automatisch verzenden goedgekeurd** en **Verzending toegestaan** staan allebei aan (sinds 14/11 staat `SIMPLE_APPROVAL: true`, dus alleen het eerste vinkje is nodig)
 - Verzendwijze is `Automatisch` en Kanaal is `E-mail`
 - **Niet meer contacteren** staat uit
 - Mailthread en Eerste verzending zijn leeg

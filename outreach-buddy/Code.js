@@ -38,7 +38,7 @@ var CFG = {
   MIN_MAIL_QUOTA: 10,            // stop met verzenden als er minder mails over zijn vandaag
   // Eenvoudige werkwijze: alleen "Automatisch verzenden goedgekeurd" is dan nodig.
   // Staat UIT tot Tatiana akkoord geeft.
-  SIMPLE_APPROVAL: false
+  SIMPLE_APPROVAL: true          // aan sinds 14/11 op vraag van Tatiana
 };
 
 var FREE_MAIL_DOMAINS = ['gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.be', 'hotmail.nl',
@@ -63,6 +63,7 @@ function runQueue() {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) { log_('Vorige run draait nog, overslaan.'); return; }
   try {
+    try { runMigrations_(); } catch (e) { alert_("Opruimactie mislukt (verzenden gaat gewoon door): " + e); }
     if (!inWindow_()) { return; }
     var t0 = Date.now();
     flushPendingWritebacks_();
@@ -90,6 +91,28 @@ function mailQuotaOk_() {
     return false;
   }
   return true;
+}
+
+// ====== EENMALIGE OPRUIMACTIES ======
+// Draait één keer (onthouden in Script Properties), ook buiten het verzendvenster. Verstuurt niets.
+function runMigrations_() {
+  var sp = PropertiesService.getScriptProperties();
+  if (sp.getProperty('MIG_BEZIG_20261114')) return;
+  var rows = queryAll_({ property: 'Verzendcontrole', rich_text: { starts_with: 'BEZIG' } }, 100);
+  var done = [], skipped = [];
+  rows.forEach(function (p) {
+    var rt = (p.properties['Verzendcontrole'].rich_text || []);
+    var full = rt.map(function (x) { return x.plain_text; }).join('');
+    if (full.indexOf('BEVESTIGD') === -1 || !rt.length || rt.some(function (x) { return x.type !== 'text'; })) { skipped.push(txt_(p, 'Merk')); return; }
+    // Alleen het eerste stukje aanpassen; de rest van het bewijs blijft exact staan.
+    var parts = rt.map(function (x) { return { type: 'text', text: { content: x.text.content, link: x.text.link }, annotations: x.annotations }; });
+    parts[0].text.content = parts[0].text.content.replace(/^BEZIG\s*[—-]\s*/, '');
+    if (updatePage_(p.id, { 'Verzendcontrole': { rich_text: parts } })) done.push(txt_(p, 'Merk')); else skipped.push(txt_(p, 'Merk'));
+  });
+  sp.setProperty('MIG_BEZIG_20261114', iso_(new Date())); // max 1x, nooit herhalen
+  GmailApp.sendEmail(CFG.REPORT_TO, 'Outreach Buddy — opruiming BEZIG',
+    '"BEZIG" weggehaald bij ' + done.length + ' verstuurde merken (bewijs behouden):\n - ' + done.join('\n - ') +
+    (skipped.length ? '\n\nNiet aangepast (geen BEVESTIGD-bewijs of fout; niets gewijzigd):\n - ' + skipped.join('\n - ') : ''));
 }
 
 // ====== EERSTE PITCHES ======
