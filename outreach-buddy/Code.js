@@ -225,7 +225,8 @@ function processFollowups_(t0) {
       { property: 'Aantal follow-ups', number: { is_empty: true } }
     ] },
     { property: 'Verzendcontrole', rich_text: { does_not_contain: 'VERGRENDELD' } },
-    { property: 'Verzendcontrole', rich_text: { does_not_contain: 'GEBLOKKEERD' } }
+    { property: 'Verzendcontrole', rich_text: { does_not_contain: 'GEBLOKKEERD' } },
+    { property: 'Verzendcontrole', rich_text: { does_not_contain: 'BEZIG' } }
   ]};
   var rows = queryAll_(filter, CFG.BATCH_SIZE);
   log_('Follow-ups die vandaag aan de beurt zijn (deze run): ' + rows.length);
@@ -392,7 +393,7 @@ function dailyReport() {
     { property: 'Status', select: { does_not_equal: 'Deal' } }
   ]}, 50);
   lines.push('');
-  lines.push('🔥 Zelf oppakken (interessante reacties): ' + hot.length);
+  lines.push('>>> ZELF OPPAKKEN (interessante reacties): ' + hot.length);
   hot.forEach(function (p) { lines.push(' - ' + txt_(p, 'Merk') + ' — ' + selName_(p, 'Reactiecategorie') + ' — ' + (p.url || '')); });
 
   // 2. Vandaag verzonden
