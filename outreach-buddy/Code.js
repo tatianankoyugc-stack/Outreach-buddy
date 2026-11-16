@@ -121,8 +121,9 @@ function firstPitchFilter_() {
     { or: [ sel_('Status', 'Concept klaar'), sel_('Status', 'Klaar voor verzending') ] },
     chk_('Automatisch verzenden goedgekeurd', true),
     chk_('Niet meer contacteren', false),
-    sel_('Verzendwijze', 'Automatisch'),
-    sel_('Kanaal', 'E-mail'),
+    // Het vinkje is de beslissing; alleen "Niet benaderen" en "Instagram DM" houden tegen.
+    { property: 'Verzendwijze', select: { does_not_equal: 'Niet benaderen' } },
+    { property: 'Kanaal', select: { does_not_equal: 'Instagram DM' } },
     { property: 'Mailthread', url: { is_empty: true } },
     { property: 'Eerste verzending', date: { is_empty: true } },
     { property: 'Verzendcontrole', rich_text: { does_not_contain: 'VERGRENDELD' } },
@@ -199,6 +200,9 @@ function sendFirst_(page) {
   var sentAt = msg.getDate();
   var props = {
     'Status': { select: { name: 'Verzonden' } },
+    'Kanaal': { select: { name: 'E-mail' } },
+    'Verzendwijze': { select: { name: 'Automatisch' } },
+    'Taal': { select: { name: selName_(page, 'Taal') || detectLang_(subject + '\n' + body) } },
     'Eerste verzending': { date: { start: iso_(sentAt) } },
     'Laatste contact': { date: { start: iso_(sentAt) } },
     'Mailthread': { url: 'https://mail.google.com/mail/u/0/#all/' + thread.getId() },
@@ -221,7 +225,8 @@ function validate_(page, to, subject, body) {
   if (body.length > 2500) return 'Bericht te lang voor een eerste pitch';
   if (!txt_(page, 'Land of markt')) return 'Land of markt ontbreekt (taal te bevestigen)';
   var taal = selName_(page, 'Taal');
-  if (!taal || taal === 'Taal te bevestigen') return 'Taal te bevestigen (veld Taal leeg)';
+  if (taal === 'Taal te bevestigen') return 'Taal te bevestigen';
+  if (!taal && !detectLang_(subject + '\n' + body)) return 'Taal van de pitch niet herkend; vul het veld Taal in';
   if (/\[[^\]]*\]|\{\{|TODO|XXX/.test(body + subject)) return 'Placeholder in tekst';
   return null;
 }
@@ -455,8 +460,8 @@ function dailyReport() {
 function whyNotSent_(p) {
   if (!CFG.SIMPLE_APPROVAL && !chkVal_(p, 'Verzending toegestaan')) return 'vinkje "Verzending toegestaan" staat uit';
   if (chkVal_(p, 'Niet meer contacteren')) return '"Niet meer contacteren" staat aan';
-  if (selName_(p, 'Verzendwijze') !== 'Automatisch') return 'Verzendwijze is niet Automatisch';
-  if (selName_(p, 'Kanaal') !== 'E-mail') return 'Kanaal is niet E-mail';
+  if (selName_(p, 'Verzendwijze') === 'Niet benaderen') return 'Verzendwijze is "Niet benaderen"';
+  if (selName_(p, 'Kanaal') === 'Instagram DM') return 'Kanaal is Instagram DM (handmatig sturen)';
   var vc = txt_(p, 'Verzendcontrole');
   if (/VERGRENDELD|FOUT|GEBLOKKEERD|BEZIG/i.test(vc)) return 'Verzendcontrole: ' + vc.slice(0, 80);
   if (p.properties['Mailthread'] && p.properties['Mailthread'].url) return 'Mailthread is al ingevuld';
@@ -541,6 +546,23 @@ function flushPendingWritebacks_() {
 }
 
 // ====== HULPFUNCTIES ======
+// Herkent de taal van de pitch zelf. Geeft 'Nederlands', 'Frans', 'Engels' of '' (twijfel).
+function detectLang_(text) {
+  var t = ' ' + String(text || '').toLowerCase().replace(/[^a-zàâçéèêëîïôûùüÿœ']+/g, ' ') + ' ';
+  var words = {
+    Nederlands: ['de', 'het', 'een', 'jullie', 'ik', 'en', 'van', 'voor', 'mijn', 'groetjes', 'dag', 'dat', 'zou', 'met', 'niet'],
+    Frans: ['le', 'la', 'les', 'vous', 'je', 'et', 'une', 'des', 'pour', 'votre', 'bonjour', 'avec', 'est', 'mon', 'pas'],
+    Engels: ['the', 'and', 'you', 'your', 'i', 'with', 'for', 'my', 'hi', 'would', 'this', 'that', 'is', 'of', 'to']
+  };
+  var score = {};
+  Object.keys(words).forEach(function (l) {
+    score[l] = words[l].reduce(function (n, w) { return n + (t.split(' ' + w + ' ').length - 1); }, 0);
+  });
+  var ranked = Object.keys(score).sort(function (a, b) { return score[b] - score[a]; });
+  var best = score[ranked[0]], second = score[ranked[1]];
+  return (best >= 8 && best >= 2 * second) ? ranked[0] : '';
+}
+
 function sel_(p, v) { return { property: p, select: { equals: v } }; }
 function chk_(p, v) { return { property: p, checkbox: { equals: v } }; }
 function rt_(s) { return { rich_text: [{ type: 'text', text: { content: String(s).slice(0, 1900) } }] }; }

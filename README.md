@@ -13,7 +13,7 @@ Google Apps Script (`outreach-buddy/Code.js`) dat UGC-pitches en follow-ups via 
 ### Eerste pitch vertrekt als
 - Status is `Concept klaar` of `Klaar voor verzending`
 - de vinkjes **Automatisch verzenden goedgekeurd** en **Verzending toegestaan** staan allebei aan (sinds 14/11 staat `SIMPLE_APPROVAL: true`, dus alleen het eerste vinkje is nodig)
-- Verzendwijze is `Automatisch` en Kanaal is `E-mail`
+- Verzendwijze is niet `Niet benaderen` en Kanaal is niet `Instagram DM` (het vinkje is de beslissing). Na verzending zet het script Verzendwijze op `Automatisch`, Kanaal op `E-mail` en vult het Taal in.
 - **Niet meer contacteren** staat uit
 - Mailthread en Eerste verzending zijn leeg
 - Verzendcontrole bevat geen VERGRENDELD, FOUT, GEBLOKKEERD of BEZIG
@@ -22,7 +22,7 @@ Google Apps Script (`outreach-buddy/Code.js`) dat UGC-pitches en follow-ups via 
   - er is een onderwerp
   - de tekst telt tussen 200 en 2500 tekens
   - Land of markt is ingevuld
-  - Taal is ingevuld en staat niet op "te bevestigen"
+  - Taal staat niet op "Taal te bevestigen"; is Taal leeg, dan herkent het script de taal van de pitch (NL/FR/EN) en blokkeert het bij twijfel
   - er staan geen placeholders in de tekst
 - Gmail (Verzonden) toont geen eerder contact met dat adres of domein. Bij gratis maildomeinen zoals gmail.com of telenet.be wordt alleen op het exacte adres gecontroleerd.
 
