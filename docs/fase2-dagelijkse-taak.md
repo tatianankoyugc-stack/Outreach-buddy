@@ -126,12 +126,19 @@ Je verstuurt **nooit** zelf een DM en gebruikt geen tool die DM's verstuurt. Ins
    - één vraag, bijvoorbeeld: "Mag ik je mijn idee en portfolio mailen, of naar wie mag ik het sturen?"
    - geen links in de eerste DM; de portfolio komt pas als ze antwoorden
 4. **"DM follow-up"** (maximaal 2 zinnen): vriendelijk, met een nieuwe invalshoek. Dus geen "ik herinner je even".
-5. **Vul niets in** bij "DM verstuurd" en "DM-datum". Die velden zijn van Tatiana.
+5. **"DM verstuurd" en "DM-datum"** vul je alleen in als Zernio het bewijst (zie "Instagram-inbox lezen" hieronder). Gok nooit.
 
 **Instagram-inbox lezen (alleen lezen, via Zernio):**
 - Account: instagram @thetatianaeditt, Zernio-account-ID `6af384be73bcbcb92206d5f8`. Gebruik `messages_list_inbox_conversations` (platform instagram) en eventueel `messages_get_inbox_conversation_messages`.
 - **Privacy:** bekijk ALLEEN gesprekken waarvan de `participantUsername` overeenkomt met de handle in het veld "Instagram" van een rij waarbij "DM verstuurd" AAN staat. Negeer alle andere gesprekken (vrienden, volgers). Neem niets daaruit over in Notion, in het rapport of in de chat.
 - **Komt er een antwoord van het merk na de DM-datum,** dan vul je in Notion "Laatste reactie" in (datum + een korte samenvatting van maximaal 15 woorden) en zet je "Volgende stap" op "DM-antwoord lezen en zelf opvolgen". Is het antwoord duidelijk positief (interesse, vraag naar prijs of info), dan zet je Reactiecategorie op "Geïnteresseerd", "Offerte gevraagd" of "Meer informatie gevraagd". Bij twijfel laat je Reactiecategorie leeg en meld je het in het rapport.
+- **Verstuurde DM's automatisch registreren:** staat er in Zernio een gesprek met de handle uit "Instagram" van een rij waar "DM verstuurd" nog UIT staat, en is het eerste bericht van @thetatianaeditt? Zet dan "DM verstuurd" AAN en "DM-datum" op de datum van dat eerste bericht. Zo hoeft Tatiana niets aan te vinken.
+- **E-mailadres uit een DM-antwoord halen:** staat er in het antwoord van het merk een e-mailadres (bijvoorbeeld "mail ons op samenwerking@merk.be")?
+  - Neem het adres exact over in "E-mail". Raad of verbeter niets.
+  - Zet in "Notities": "E-mailadres gekregen via Instagram-DM van @handle op JJJJ-MM-DD".
+  - Zet Kanaal "E-mail", Verzendwijze "Automatisch" en Status "Concept klaar".
+  - Schrijf een **nieuw Eerste bericht** dat begint met een verwijzing naar hun DM ("Bedankt voor jullie berichtje op Instagram, zoals gevraagd stuur ik mijn idee per mail"), plus het idee uit de DM-tekst. Schrijf er ook een Onderwerp, Follow-up 1 en Follow-up 2 bij, volgens de regels van stap 5.
+  - Laat beide verzendvinkjes UIT. Vermeld het merk bovenaan het rapport als "e-mail gekregen via DM, klaar om aan te vinken".
 - **Stuur nooit een antwoord** via Zernio of op een andere manier.
 
 **Opvolgen:**
@@ -148,9 +155,22 @@ Stuur één mail via Gmail naar **tatianankoyugc@gmail.com**, met als onderwerp 
 1. 🔥 Echte reacties om zelf op te pakken (merk + wat ze vragen), of "geen nieuwe reacties"
 2. Nieuwe merken vandaag: X (waarvan Y klaar om aan te vinken, Z via Instagram DM)
 3. De namen van de merken die klaar zijn om aan te vinken
-4. DM's van vandaag: merk + Instagramlink (de tekst staat in Notion), plus de follow-up-DM's die vandaag aan de beurt zijn
+4. DM's van vandaag: het aantal (de volledige lijst staat onderaan de mail)
 5. Bounces of problemen van de laatste 24 uur
 6. Wat er fout ging tijdens deze run, of "geen fouten"
+
+Onder de samenvatting van maximaal 10 regels zet je het blok **"=== DM'S VAN VANDAAG ==="**, met per merk exact dit formaat (Claude in Chrome leest dit blok):
+
+```
+MERK: <merknaam>
+PROFIEL: <volledige Instagram-URL uit het veld Instagram>
+SOORT: eerste DM | follow-up-DM
+TEKST:
+<exacte DM-tekst of DM follow-up uit Notion>
+---
+```
+
+Zijn er geen DM's, dan zet je "=== DM'S VAN VANDAAG ===" met "geen" eronder.
 
 ### 9. Bij een fout
 Werkt Notion of Gmail niet, of kun je de taak niet afmaken? Stuur dan meteen een mail naar tatianankoyugc@gmail.com met als onderwerp `Outreach Buddy — aandacht nodig` en leg in gewone taal uit wat er misging. Probeer niets opnieuw dat tot dubbele rijen kan leiden.
