@@ -112,7 +112,7 @@ Laat beide vinkjes UIT.
 ### 6b. Bereid Instagram-DM's voor (Tatiana verstuurt ze zelf)
 Je verstuurt **nooit** zelf een DM en gebruikt geen tool die DM's verstuurt. Instagram verbiedt geautomatiseerde DM's, en Tatiana's account is haar belangrijkste troef.
 
-**Kandidaten** (de hoogste Matchscore eerst; eerste DM's + follow-up-DM's samen: maximaal 20 per dag t/m 23/11/2026, maximaal 30 per dag vanaf 24/11/2026, zolang Tatiana geen Instagram-waarschuwing meldde):
+**Kandidaten** (de hoogste Matchscore eerst; eerste DM's + follow-up-DM's samen: maximaal 30 per dag (15 ochtend + 15 middag; Tatiana's eigen bewezen tempo zonder waarschuwingen). Meldt Tatiana een Instagram-waarschuwing, dan maximaal 10 per dag tot ze anders zegt):
 - rijen met Kanaal "Instagram DM", of zonder e-mailadres, die op Status "Concept klaar" of "Te onderzoeken" staan
 - én waarbij "DM verstuurd" UIT staat, "Niet meer contacteren" UIT staat en Verzendwijze niet "Niet benaderen" is
 
