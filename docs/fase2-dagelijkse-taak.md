@@ -128,6 +128,12 @@ Je verstuurt **nooit** zelf een DM en gebruikt geen tool die DM's verstuurt. Ins
 4. **"DM follow-up"** (maximaal 2 zinnen): vriendelijk, met een nieuwe invalshoek. Dus geen "ik herinner je even".
 5. **Vul niets in** bij "DM verstuurd" en "DM-datum". Die velden zijn van Tatiana.
 
+**Instagram-inbox lezen (alleen lezen, via Zernio):**
+- Account: instagram @thetatianaeditt, Zernio-account-ID `6af384be73bcbcb92206d5f8`. Gebruik `messages_list_inbox_conversations` (platform instagram) en eventueel `messages_get_inbox_conversation_messages`.
+- **Privacy:** bekijk ALLEEN gesprekken waarvan de `participantUsername` overeenkomt met de handle in het veld "Instagram" van een rij waarbij "DM verstuurd" AAN staat. Negeer alle andere gesprekken (vrienden, volgers). Neem niets daaruit over in Notion, in het rapport of in de chat.
+- **Komt er een antwoord van het merk na de DM-datum,** dan vul je in Notion "Laatste reactie" in (datum + een korte samenvatting van maximaal 15 woorden) en zet je "Volgende stap" op "DM-antwoord lezen en zelf opvolgen". Is het antwoord duidelijk positief (interesse, vraag naar prijs of info), dan zet je Reactiecategorie op "Geïnteresseerd", "Offerte gevraagd" of "Meer informatie gevraagd". Bij twijfel laat je Reactiecategorie leeg en meld je het in het rapport.
+- **Stuur nooit een antwoord** via Zernio of op een andere manier.
+
 **Opvolgen:**
 - Vind je rijen met "DM verstuurd" AAN en een DM-datum van 5 dagen of langer geleden, zonder reactie in Notion? Zet ze in het rapport onder "Follow-up-DM vandaag" (merk + Instagramlink). Versturen doet Tatiana zelf.
 - Wordt een DM beantwoord, dan zet Tatiana dat zelf in Notion. Jij past daar niets aan.
