@@ -109,18 +109,42 @@ Maak per merk een nieuwe rij met deze velden:
 
 Laat beide vinkjes UIT.
 
+### 6b. Bereid Instagram-DM's voor (Tatiana verstuurt ze zelf)
+Je verstuurt **nooit** zelf een DM en gebruikt geen tool die DM's verstuurt. Instagram verbiedt geautomatiseerde DM's, en Tatiana's account is haar belangrijkste troef.
+
+**Kandidaten** (maximaal 8 per dag, de hoogste Matchscore eerst):
+- rijen met Kanaal "Instagram DM", of zonder e-mailadres, die op Status "Concept klaar" of "Te onderzoeken" staan
+- én waarbij "DM verstuurd" UIT staat, "Niet meer contacteren" UIT staat en Verzendwijze niet "Niet benaderen" is
+
+**Per kandidaat:**
+1. **Zoek het Instagramprofiel.** Gebruik alleen een link die op de officiële website staat (footer, contactpagina). Zet die in het veld "Instagram". Vind je geen link op de site, sla het merk dan over. Raad nooit een handle.
+2. **Controleer dat het merk nooit benaderd werd.** Kijk in Gmail en in Notion: Mailthread moet leeg zijn, "DM verstuurd" moet uit staan.
+3. **"DM-tekst"** (maximaal 4 korte zinnen, in de taal van Taal, in de toon van Tatiana):
+   - begroeting
+   - één concreet product of detail van hun site, met één video-idee
+   - "Ik ben Tatiana, UGC-creator uit België en ik maak betaalde video's voor merkkanalen"
+   - één vraag, bijvoorbeeld: "Mag ik je mijn idee en portfolio mailen, of naar wie mag ik het sturen?"
+   - geen links in de eerste DM; de portfolio komt pas als ze antwoorden
+4. **"DM follow-up"** (maximaal 2 zinnen): vriendelijk, met een nieuwe invalshoek. Dus geen "ik herinner je even".
+5. **Vul niets in** bij "DM verstuurd" en "DM-datum". Die velden zijn van Tatiana.
+
+**Opvolgen:**
+- Vind je rijen met "DM verstuurd" AAN en een DM-datum van 5 dagen of langer geleden, zonder reactie in Notion? Zet ze in het rapport onder "Follow-up-DM vandaag" (merk + Instagramlink). Versturen doet Tatiana zelf.
+- Wordt een DM beantwoord, dan zet Tatiana dat zelf in Notion. Jij past daar niets aan.
+
 ### 7. Kijk naar reacties (alleen lezen)
 - Zoek in Gmail de mails van de laatste 24 uur van domeinen die Tatiana gepitcht heeft: `in:inbox newer_than:1d -from:me`, vergeleken met de E-mail-domeinen in Notion.
 - Haal automatische antwoorden ("we hebben je mail ontvangen") eruit.
 - Zoek in Notion ook de rijen met Reactiecategorie "Geïnteresseerd", "Meer informatie gevraagd" of "Offerte gevraagd" die niet op "Afgesloten" of "Deal" staan.
 
 ### 8. Stuur het rapport
-Stuur één mail via Gmail naar **tatianankoyugc@gmail.com**, met als onderwerp `Outreach Buddy — ochtendlijst JJJJ-MM-DD`. Maximaal 8 regels, informeel Nederlands, in deze volgorde:
+Stuur één mail via Gmail naar **tatianankoyugc@gmail.com**, met als onderwerp `Outreach Buddy — ochtendlijst JJJJ-MM-DD`. Maximaal 10 regels, informeel Nederlands, in deze volgorde:
 1. 🔥 Echte reacties om zelf op te pakken (merk + wat ze vragen), of "geen nieuwe reacties"
 2. Nieuwe merken vandaag: X (waarvan Y klaar om aan te vinken, Z via Instagram DM)
 3. De namen van de merken die klaar zijn om aan te vinken
-4. Bounces of problemen van de laatste 24 uur
-5. Wat er fout ging tijdens deze run, of "geen fouten"
+4. DM's van vandaag: merk + Instagramlink (de tekst staat in Notion), plus de follow-up-DM's die vandaag aan de beurt zijn
+5. Bounces of problemen van de laatste 24 uur
+6. Wat er fout ging tijdens deze run, of "geen fouten"
 
 ### 9. Bij een fout
 Werkt Notion of Gmail niet, of kun je de taak niet afmaken? Stuur dan meteen een mail naar tatianankoyugc@gmail.com met als onderwerp `Outreach Buddy — aandacht nodig` en leg in gewone taal uit wat er misging. Probeer niets opnieuw dat tot dubbele rijen kan leiden.
