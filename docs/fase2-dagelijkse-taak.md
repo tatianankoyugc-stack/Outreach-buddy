@@ -112,7 +112,7 @@ Laat beide vinkjes UIT.
 ### 6b. Bereid Instagram-DM's voor (Tatiana verstuurt ze zelf)
 Je verstuurt **nooit** zelf een DM en gebruikt geen tool die DM's verstuurt. Instagram verbiedt geautomatiseerde DM's, en Tatiana's account is haar belangrijkste troef.
 
-**Kandidaten** (maximaal 8 per dag, de hoogste Matchscore eerst):
+**Kandidaten** (de hoogste Matchscore eerst; eerste DM's + follow-up-DM's samen: maximaal 20 per dag t/m 23/11/2026, maximaal 30 per dag vanaf 24/11/2026, zolang Tatiana geen Instagram-waarschuwing meldde):
 - rijen met Kanaal "Instagram DM", of zonder e-mailadres, die op Status "Concept klaar" of "Te onderzoeken" staan
 - én waarbij "DM verstuurd" UIT staat, "Niet meer contacteren" UIT staat en Verzendwijze niet "Niet benaderen" is
 
@@ -159,7 +159,7 @@ Stuur één mail via Gmail naar **tatianankoyugc@gmail.com**, met als onderwerp 
 5. Bounces of problemen van de laatste 24 uur
 6. Wat er fout ging tijdens deze run, of "geen fouten"
 
-Onder de samenvatting van maximaal 10 regels zet je het blok **"=== DM'S VAN VANDAAG ==="**, met per merk exact dit formaat (Claude in Chrome leest dit blok):
+Onder de samenvatting van maximaal 10 regels zet je de DM's, verdeeld in twee blokken van gelijke grootte (het ochtendblok krijgt de hoogste Matchscores): **"=== DM'S OCHTEND ==="** en **"=== DM'S MIDDAG ==="**. Per merk gebruik je exact dit formaat (Claude in Chrome leest deze blokken):
 
 ```
 MERK: <merknaam>
@@ -170,7 +170,7 @@ TEKST:
 ---
 ```
 
-Zijn er geen DM's, dan zet je "=== DM'S VAN VANDAAG ===" met "geen" eronder.
+Is een blok leeg, dan zet je "geen" onder de kop.
 
 ### 9. Bij een fout
 Werkt Notion of Gmail niet, of kun je de taak niet afmaken? Stuur dan meteen een mail naar tatianankoyugc@gmail.com met als onderwerp `Outreach Buddy — aandacht nodig` en leg in gewone taal uit wat er misging. Probeer niets opnieuw dat tot dubbele rijen kan leiden.
