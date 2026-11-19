@@ -62,12 +62,14 @@ Database "Tatiana's Outreach Buddy", data source `collection://32a5fb7f-bced-4e2
 
 ### 5. Schrijf de teksten, in de taal van "Taal"
 - **Onderwerp:** kort en concreet, over één product of één detail.
-- **Eerste bericht:** 150 tot 230 woorden, met deze opbouw:
+- **Eerste bericht:** 90 tot 150 woorden, met deze opbouw:
   - "Hey/Dag [Merk]-team," (in het Frans: "Bonjour l'équipe [Merk],")
-  - één concreet product of één echt detail van hun site, met daaraan gekoppeld één video-idee
+  - één concreet product of één echt detail van hun site
+  - **precies één voorbeeld** van een video-idee, in één of twee zinnen. Nooit een opsomming van meerdere ideeën of video's (stijlregel van Tatiana, 19/11)
   - kort wie Tatiana is: "Ik ben Tatiana, UGC-creator uit België", betaalde video voor hun eigen kanalen, NL/FR
   - een eerlijke grens, bijvoorbeeld "ik doe niet alsof ik het al gebruikt heb" of "ik beloof geen resultaat"
-  - **één** afsluitende vraag
+  - eindig met één vraag of ze geïnteresseerd zijn om meer te horen, bijvoorbeeld "Zijn jullie geïnteresseerd om hier meer over te horen?"
+  - houd het kort: liefst 90 tot 150 woorden
   - deze drie regels:
     Portfolio: https://thetatianaedit.be
     Instagram: @thetatianaeditt
