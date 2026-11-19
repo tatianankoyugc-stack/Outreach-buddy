@@ -62,14 +62,14 @@ Database "Tatiana's Outreach Buddy", data source `collection://32a5fb7f-bced-4e2
 
 ### 5. Schrijf de teksten, in de taal van "Taal"
 - **Onderwerp:** kort en concreet, over één product of één detail.
-- **Eerste bericht:** 90 tot 150 woorden, met deze opbouw:
+- **Eerste bericht:** 140 tot 200 woorden, in een **warme, persoonlijke en informele toon** (zoals Tatiana praat: alsof een vriendin je iets laat zien; mag één emoji bevatten), met deze opbouw:
   - "Hey/Dag [Merk]-team," (in het Frans: "Bonjour l'équipe [Merk],")
   - één concreet product of één echt detail van hun site
   - **precies één voorbeeld** van een video-idee, in één of twee zinnen. Nooit een opsomming van meerdere ideeën of video's (stijlregel van Tatiana, 19/11)
   - kort wie Tatiana is: "Ik ben Tatiana, UGC-creator uit België", betaalde video voor hun eigen kanalen, NL/FR
   - een eerlijke grens, bijvoorbeeld "ik doe niet alsof ik het al gebruikt heb" of "ik beloof geen resultaat"
-  - eindig met één vraag of ze geïnteresseerd zijn om meer te horen, bijvoorbeeld "Zijn jullie geïnteresseerd om hier meer over te horen?"
-  - houd het kort: liefst 90 tot 150 woorden
+  - eindig met één vraag of ze geïnteresseerd zijn om meer te horen, bijvoorbeeld "Zin om hier samen eens over te babbelen?" of "Zijn jullie geïnteresseerd om hier meer over te horen?"
+  - de toon is warm en persoonlijk, nooit stijf of zakelijk (stijlregel van Tatiana, 19/11). Zie het voorbeeld van Leen Bakker / Freya in Notion
   - deze drie regels:
     Portfolio: https://thetatianaedit.be
     Instagram: @thetatianaeditt
