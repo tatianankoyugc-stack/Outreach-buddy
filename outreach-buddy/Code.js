@@ -189,7 +189,8 @@ function sendFirst_(page) {
   // 3. Verzenden
   var msg;
   try {
-    msg = GmailApp.createDraft(to, subject, body, { name: CFG.SENDER_NAME }).send();
+    // htmlBody erbij: in een plain-text body maakt GmailApp emoji kapot (������).
+    msg = GmailApp.createDraft(to, subject, body, { name: CFG.SENDER_NAME, htmlBody: toHtml_(body) }).send();
   } catch (e) {
     updatePage_(id, { 'Verzendcontrole': rt_('FOUT bij verzenden ' + iso_(new Date()) + ': ' + String(e).slice(0, 300) + ' — controleer Gmail vóór je dit wist.') });
     alert_('Verzendfout bij ' + brand + ': ' + e);
@@ -635,4 +636,11 @@ function healthCheck() {
   var text = out.join('\n');
   console.log(text);
   GmailApp.sendEmail(CFG.REPORT_TO, 'Outreach Buddy healthcheck', text);
+}
+
+// Platte tekst naar eenvoudige HTML (zelfde uitzicht, emoji blijven heel).
+function toHtml_(text) {
+  var esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  esc = esc.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
+  return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5">' + esc.replace(/\r?\n/g, '<br>') + '</div>';
 }
