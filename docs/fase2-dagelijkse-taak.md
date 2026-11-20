@@ -152,9 +152,15 @@ Je verstuurt **nooit** zelf een DM en gebruikt geen tool die DM's verstuurt. Ins
 - Haal automatische antwoorden ("we hebben je mail ontvangen") eruit.
 - Zoek in Notion ook de rijen met Reactiecategorie "Geïnteresseerd", "Meer informatie gevraagd" of "Offerte gevraagd" die niet op "Afgesloten" of "Deal" staan.
 
+### 7b. Maandpakket na levering (vaste samenwerkingen)
+- Zoek rijen met **Video's geleverd** ingevuld (3 dagen of langer geleden) en **Maandpakket voorgesteld** leeg.
+- Is **Maandpakket-tekst** leeg, schrijf die dan (zie `docs/maandpakket.md`): korte, warme mail in de taal van "Taal", gericht aan de contactpersoon, die (1) bedankt voor de samenwerking, (2) één concreet idee geeft voor de volgende maand rond hun product, en (3) het maandpakket voorstelt (2 video's per maand voor €380 of 4 video's per maand voor €700, minimum 3 maanden, excl. btw). Eindigt met een vraag, zoals "Zullen we dit eens bekijken voor januari?". Geen verzonnen resultaten of cijfers.
+- Zet het merk in het rapport onder **"💼 Maandpakket voorstellen"** (merk + Notion-link). Versturen doet Tatiana zelf, als antwoord in de bestaande mailthread. Daarna vult zij "Maandpakket voorgesteld" in.
+- Is "Maandpakket voorgesteld" 7 dagen of langer geleden en is er nog geen antwoord in Gmail? Zet het merk één keer in het rapport als "maandpakket opvolgen".
+
 ### 8. Stuur het rapport
 Stuur één mail via Gmail naar **tatianankoyugc@gmail.com**, met als onderwerp `Outreach Buddy — ochtendlijst JJJJ-MM-DD`. Maximaal 10 regels, informeel Nederlands, in deze volgorde:
-1. 🔥 Echte reacties om zelf op te pakken (merk + wat ze vragen), of "geen nieuwe reacties"
+1. 🔥 Echte reacties om zelf op te pakken (merk + wat ze vragen), of "geen nieuwe reacties". Daarna 💼 merken waar het maandpakket voorgesteld kan worden (stap 7b), als die er zijn
 2. Nieuwe merken vandaag: X (waarvan Y klaar om aan te vinken, Z via Instagram DM)
 3. De namen van de merken die klaar zijn om aan te vinken
 4. DM's van vandaag: het aantal (de volledige lijst staat onderaan de mail)
